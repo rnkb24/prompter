@@ -27,7 +27,7 @@ export function Sidebar({ className }: { className?: string }) {
     ]
 
     return (
-        <div className={cn("pb-12 w-64 border-r bg-zinc-50 dark:bg-zinc-900 h-screen flex flex-col", className)}>
+        <div className={cn("pb-12 w-64 border-r bg-[#e5e5e5] dark:bg-[#e5e5e5] dark:text-gray-800 h-screen flex flex-col", className)}>
             <div className="space-y-4 py-4">
                 <div className="px-3 py-2">
                     <div className="flex items-center justify-between mb-4 px-4">
