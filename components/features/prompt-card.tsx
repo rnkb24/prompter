@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Prompt, Category } from "@/lib/types"
 import { PromptDetailsDialog } from "./prompt-details-dialog"
+import { PromptEditDialog } from "./prompt-edit-dialog"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Copy, Edit, Trash2 } from "lucide-react"
@@ -18,6 +19,7 @@ interface PromptCardProps {
 export function PromptCard({ prompt, category }: PromptCardProps) {
     const { deletePrompt } = usePrompts()
     const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+    const [isEditOpen, setIsEditOpen] = useState(false)
 
     const copyToClipboard = (e: React.MouseEvent, text: string) => {
         e.stopPropagation()
@@ -61,11 +63,12 @@ export function PromptCard({ prompt, category }: PromptCardProps) {
                     <Button variant="ghost" size="icon" onClick={(e) => copyToClipboard(e, prompt.content)} title="Copy to clipboard">
                         <Copy className="h-4 w-4" />
                     </Button>
-                    <Link href={`/prompt/${prompt.id}`} onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" title="Edit">
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                    </Link>
+                    <Button variant="ghost" size="icon" title="Edit" onClick={(e) => {
+                        e.stopPropagation()
+                        setIsEditOpen(true)
+                    }}>
+                        <Edit className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete} title="Delete">
                         <Trash2 className="h-4 w-4" />
                     </Button>
@@ -77,6 +80,12 @@ export function PromptCard({ prompt, category }: PromptCardProps) {
                 onClose={() => setIsDetailsOpen(false)}
                 prompt={prompt}
                 category={category}
+            />
+
+            <PromptEditDialog
+                isOpen={isEditOpen}
+                onClose={() => setIsEditOpen(false)}
+                prompt={prompt}
             />
         </>
     )
