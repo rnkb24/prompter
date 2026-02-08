@@ -28,7 +28,7 @@ function DashboardContent() {
   return (
     <div className="h-full flex flex-col">
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 sticky top-0 z-10">
-        <div className="flex items-center gap-4 max-w-5xl mx-auto w-full">
+        <div className="flex items-center gap-4 max-w-5xl mx-auto w-full pl-12 md:pl-0">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input

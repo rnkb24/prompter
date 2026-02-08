@@ -24,11 +24,10 @@ export function Sidebar({ className }: { className?: string }) {
     const mainNav = [
         { id: 'all', name: 'All Prompts', icon: LayoutGrid, href: '/' },
         // { id: 'favorites', name: 'Favorites', icon: Heart, href: '/?filter=favorites' }, // Future
-        { id: 'trash', name: 'Trash', icon: Trash2, href: '/?filter=trash' },
     ]
 
     return (
-        <div className={cn("pb-12 w-64 border-r bg-gray-50/40 dark:bg-gray-800/40 h-screen flex flex-col", className)}>
+        <div className={cn("pb-12 w-64 border-r bg-gray-50 dark:bg-gray-900 h-screen flex flex-col", className)}>
             <div className="space-y-4 py-4">
                 <div className="px-3 py-2">
                     <div className="flex items-center justify-between mb-4 px-4">
