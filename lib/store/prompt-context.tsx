@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { Category, Prompt, PromptContextType } from '@/lib/types'
+import { Category, Prompt, PromptContextType, PromptJSON } from '@/lib/types'
 
 const PromptContext = createContext<PromptContextType | undefined>(undefined)
 
@@ -21,8 +21,8 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
                 ]);
 
                 if (promptsRes.ok) {
-                    const data = await promptsRes.json();
-                    setPrompts(data.map((p: any) => ({
+                    const data: PromptJSON[] = await promptsRes.json();
+                    setPrompts(data.map((p) => ({
                         ...p,
                         createdAt: new Date(p.createdAt).getTime(),
                         updatedAt: new Date(p.updatedAt).getTime()
@@ -30,7 +30,7 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 if (categoriesRes.ok) {
-                    const data = await categoriesRes.json();
+                    const data: Category[] = await categoriesRes.json();
                     setCategories(data);
                 }
             } catch (error) {
@@ -52,7 +52,7 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (res.ok) {
-                const newPrompt = await res.json();
+                const newPrompt: PromptJSON = await res.json();
                 setPrompts((prev) => [{
                     ...newPrompt,
                     createdAt: new Date(newPrompt.createdAt).getTime(),
@@ -104,7 +104,7 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
             });
 
             if (res.ok) {
-                const newCategory = await res.json();
+                const newCategory: Category = await res.json();
                 setCategories((prev) => [...prev, newCategory]);
             }
         } catch (error) {

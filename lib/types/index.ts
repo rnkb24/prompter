@@ -15,6 +15,11 @@ export interface Prompt {
     isFavorite?: boolean;
 }
 
+export interface PromptJSON extends Omit<Prompt, 'createdAt' | 'updatedAt'> {
+    createdAt: string;
+    updatedAt: string;
+}
+
 export type PromptContextType = {
     prompts: Prompt[];
     categories: Category[];
