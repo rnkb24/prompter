@@ -27,11 +27,15 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
                         createdAt: new Date(p.createdAt).getTime(),
                         updatedAt: new Date(p.updatedAt).getTime()
                     })));
+                } else {
+                    console.error('Failed to fetch prompts:', await promptsRes.text());
                 }
 
                 if (categoriesRes.ok) {
                     const data = await categoriesRes.json();
                     setCategories(data);
+                } else {
+                    console.error('Failed to fetch categories:', await categoriesRes.text());
                 }
             } catch (error) {
                 console.error('Failed to fetch data:', error);
@@ -58,9 +62,15 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
                     createdAt: new Date(newPrompt.createdAt).getTime(),
                     updatedAt: new Date(newPrompt.updatedAt).getTime()
                 }, ...prev]);
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                const errorMessage = errorData.details || errorData.error || 'Unknown error';
+                console.error('Failed to add prompt:', errorMessage);
+                alert('Failed to save prompt: ' + errorMessage);
             }
         } catch (error) {
             console.error('Failed to add prompt:', error);
+            alert('Failed to save prompt. Please check your connection.');
         }
     }
 
@@ -71,14 +81,20 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
         )
 
         try {
-            await fetch(`/api/prompts/${id}`, {
+            const res = await fetch(`/api/prompts/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates),
             });
+            if (!res.ok) {
+                 const errorData = await res.json().catch(() => ({}));
+                 console.error('Failed to update prompt:', errorData);
+                 alert('Failed to update prompt. Changes may not be saved.');
+            }
         } catch (error) {
             console.error('Failed to update prompt:', error);
             // Revert on failure would go here
+            alert('Failed to update prompt. Please check your connection.');
         }
     }
 
@@ -87,11 +103,16 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
         setPrompts((prev) => prev.filter((p) => p.id !== id))
 
         try {
-            await fetch(`/api/prompts/${id}`, {
+            const res = await fetch(`/api/prompts/${id}`, {
                 method: 'DELETE',
             });
+             if (!res.ok) {
+                 console.error('Failed to delete prompt:', await res.text());
+                 alert('Failed to delete prompt.');
+            }
         } catch (error) {
             console.error('Failed to delete prompt:', error);
+            alert('Failed to delete prompt. Please check your connection.');
         }
     }
 
@@ -106,9 +127,15 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
             if (res.ok) {
                 const newCategory = await res.json();
                 setCategories((prev) => [...prev, newCategory]);
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                const errorMessage = errorData.details || errorData.error || 'Unknown error';
+                console.error('Failed to add category:', errorMessage);
+                alert('Failed to add category: ' + errorMessage);
             }
         } catch (error) {
             console.error('Failed to add category:', error);
+            alert('Failed to add category. Please check your connection.');
         }
     }
 
@@ -118,13 +145,18 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
         )
 
         try {
-            await fetch(`/api/categories/${id}`, {
+            const res = await fetch(`/api/categories/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates),
             });
+            if (!res.ok) {
+                 console.error('Failed to update category:', await res.text());
+                 alert('Failed to update category.');
+            }
         } catch (error) {
             console.error('Failed to update category:', error);
+            alert('Failed to update category. Please check your connection.');
         }
     }
 
@@ -135,11 +167,16 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
         )
 
         try {
-            await fetch(`/api/categories/${id}`, {
+            const res = await fetch(`/api/categories/${id}`, {
                 method: 'DELETE',
             });
+            if (!res.ok) {
+                 console.error('Failed to delete category:', await res.text());
+                 alert('Failed to delete category.');
+            }
         } catch (error) {
             console.error('Failed to delete category:', error);
+             alert('Failed to delete category. Please check your connection.');
         }
     }
 

@@ -26,8 +26,11 @@ export async function POST(request: Request) {
         }).returning();
 
         return NextResponse.json(newPrompt[0]);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating prompt:', error);
-        return NextResponse.json({ error: 'Failed to create prompt' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Failed to create prompt',
+            details: error.message
+        }, { status: 500 });
     }
 }
