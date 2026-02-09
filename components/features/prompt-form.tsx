@@ -22,13 +22,13 @@ export function PromptForm({ initialData, isEditing = false }: PromptFormProps) 
 
     const [title, setTitle] = useState(initialData?.title || "")
     const [content, setContent] = useState(initialData?.content || "")
-    const [categoryId, setCategoryId] = useState(initialData?.categoryId || "")
+    const [categoryId, setCategoryId] = useState(initialData?.categoryId ?? "")
 
     useEffect(() => {
         if (initialData) {
             setTitle(initialData.title)
             setContent(initialData.content)
-            setCategoryId(initialData.categoryId)
+            setCategoryId(initialData.categoryId ?? "")
         }
     }, [initialData])
 
@@ -37,10 +37,13 @@ export function PromptForm({ initialData, isEditing = false }: PromptFormProps) 
 
         if (!title.trim() || !content.trim()) return
 
+        // Convert empty string to null for database compatibility
+        const sanitizedCategoryId = categoryId.trim() === '' ? null : categoryId
+
         if (isEditing && initialData) {
-            updatePrompt(initialData.id, { title, content, categoryId })
+            updatePrompt(initialData.id, { title, content, categoryId: sanitizedCategoryId })
         } else {
-            addPrompt({ title, content, categoryId })
+            addPrompt({ title, content, categoryId: sanitizedCategoryId })
         }
 
         router.push('/')

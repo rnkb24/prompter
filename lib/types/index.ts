@@ -9,7 +9,7 @@ export interface Prompt {
     id: string;
     title: string;
     content: string;
-    categoryId: string;
+    categoryId: string | null;
     createdAt: number;
     updatedAt: number;
     isFavorite?: boolean;
