@@ -77,77 +77,143 @@ export function PromptProvider({ children }: { children: React.ReactNode }) {
     const [categories, setCategories] = useState<Category[]>([])
     const [isLoaded, setIsLoaded] = useState(false)
 
-    // Load from localStorage
+    // Load from API
     useEffect(() => {
-        const storedPrompts = localStorage.getItem('prompts')
-        const storedCategories = localStorage.getItem('categories')
+        const fetchData = async () => {
+            try {
+                const [promptsRes, categoriesRes] = await Promise.all([
+                    fetch('/api/prompts'),
+                    fetch('/api/categories')
+                ]);
 
-        if (storedPrompts) {
-            setPrompts(JSON.parse(storedPrompts))
-        } else {
-            setPrompts(DEFAULT_PROMPTS)
-        }
+                if (promptsRes.ok) {
+                    const data = await promptsRes.json();
+                    setPrompts(data.map((p: any) => ({
+                        ...p,
+                        createdAt: new Date(p.createdAt).getTime(),
+                        updatedAt: new Date(p.updatedAt).getTime()
+                    })));
+                }
 
-        if (storedCategories) {
-            setCategories(JSON.parse(storedCategories))
-        } else {
-            setCategories(DEFAULT_CATEGORIES)
-        }
-        setIsLoaded(true)
+                if (categoriesRes.ok) {
+                    const data = await categoriesRes.json();
+                    // If no categories exist, we might want to seed defaults? 
+                    // For now, just set what we get.
+                    if (data.length === 0) {
+                        // Optional: seed defaults if empty, or just leave empty.
+                        // Let's seed defaults if truly empty to keep the app usable immediately.
+                        // But for now, let's respect the DB state.
+                    }
+                    setCategories(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            } finally {
+                setIsLoaded(true);
+            }
+        };
+
+        fetchData();
     }, [])
 
-    // Save to localStorage
-    useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem('prompts', JSON.stringify(prompts))
-        }
-    }, [prompts, isLoaded])
+    const addPrompt = async (promptData: Omit<Prompt, 'id' | 'createdAt' | 'updatedAt'>) => {
+        try {
+            const res = await fetch('/api/prompts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(promptData),
+            });
 
-    useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem('categories', JSON.stringify(categories))
+            if (res.ok) {
+                const newPrompt = await res.json();
+                setPrompts((prev) => [{
+                    ...newPrompt,
+                    createdAt: new Date(newPrompt.createdAt).getTime(),
+                    updatedAt: new Date(newPrompt.updatedAt).getTime()
+                }, ...prev]);
+            }
+        } catch (error) {
+            console.error('Failed to add prompt:', error);
         }
-    }, [categories, isLoaded])
-
-    const addPrompt = (promptData: Omit<Prompt, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newPrompt: Prompt = {
-            ...promptData,
-            id: crypto.randomUUID(),
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-        }
-        setPrompts((prev) => [newPrompt, ...prev])
     }
 
-    const updatePrompt = (id: string, updates: Partial<Omit<Prompt, 'id' | 'createdAt'>>) => {
+    const updatePrompt = async (id: string, updates: Partial<Omit<Prompt, 'id' | 'createdAt'>>) => {
+        // Optimistic update
         setPrompts((prev) =>
             prev.map((p) => (p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p))
         )
-    }
 
-    const deletePrompt = (id: string) => {
-        setPrompts((prev) => prev.filter((p) => p.id !== id))
-    }
-
-    const addCategory = (categoryData: Omit<Category, 'id'>) => {
-        const newCategory: Category = {
-            ...categoryData,
-            id: crypto.randomUUID(),
+        try {
+            await fetch(`/api/prompts/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+        } catch (error) {
+            console.error('Failed to update prompt:', error);
+            // Revert on failure would go here
         }
-        setCategories((prev) => [...prev, newCategory])
     }
 
-    const updateCategory = (id: string, updates: Partial<Omit<Category, 'id'>>) => {
+    const deletePrompt = async (id: string) => {
+        // Optimistic update
+        setPrompts((prev) => prev.filter((p) => p.id !== id))
+
+        try {
+            await fetch(`/api/prompts/${id}`, {
+                method: 'DELETE',
+            });
+        } catch (error) {
+            console.error('Failed to delete prompt:', error);
+        }
+    }
+
+    const addCategory = async (categoryData: Omit<Category, 'id'>) => {
+        try {
+            const res = await fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(categoryData),
+            });
+
+            if (res.ok) {
+                const newCategory = await res.json();
+                setCategories((prev) => [...prev, newCategory]);
+            }
+        } catch (error) {
+            console.error('Failed to add category:', error);
+        }
+    }
+
+    const updateCategory = async (id: string, updates: Partial<Omit<Category, 'id'>>) => {
         setCategories((prev) =>
             prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
         )
+
+        try {
+            await fetch(`/api/categories/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+        } catch (error) {
+            console.error('Failed to update category:', error);
+        }
     }
 
-    const deleteCategory = (id: string) => {
+    const deleteCategory = async (id: string) => {
         setCategories((prev) => prev.filter((c) => c.id !== id))
         setPrompts((prev) =>
             prev.map((p) => (p.categoryId === id ? { ...p, categoryId: "" } : p))
         )
+
+        try {
+            await fetch(`/api/categories/${id}`, {
+                method: 'DELETE',
+            });
+        } catch (error) {
+            console.error('Failed to delete category:', error);
+        }
     }
 
     return (
