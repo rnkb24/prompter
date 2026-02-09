@@ -1,102 +1,94 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
-
-// Load environment variables from .env.local
-config({ path: resolve(process.cwd(), '.env.local') });
-
 import { db } from './index';
 import { categories, prompts } from './schema';
+import { sql } from 'drizzle-orm';
 
-const categoryIds = {
-    myPrompts: crypto.randomUUID(),
-    brainstorming: crypto.randomUUID(),
-    marketing: crypto.randomUUID(),
-    coding: crypto.randomUUID(),
-    nano: crypto.randomUUID(),
-};
-
-const DEFAULT_CATEGORIES = [
-    { id: categoryIds.myPrompts, name: 'My Prompts', color: 'bg-yellow-100 text-yellow-700' },
-    { id: categoryIds.brainstorming, name: 'Brainstorming', color: 'bg-pink-100 text-pink-700' },
-    { id: categoryIds.marketing, name: 'Marketing', color: 'bg-blue-100 text-blue-700' },
-    { id: categoryIds.coding, name: 'Coding', color: 'bg-green-100 text-green-700' },
-    { id: categoryIds.nano, name: 'Nano Banana Pro', color: 'bg-purple-100 text-purple-700' },
+const SEED_CATEGORIES = [
+    { name: 'My Prompts', color: 'bg-yellow-100 text-yellow-700' },
+    { name: 'Brainstorming', color: 'bg-pink-100 text-pink-700' },
+    { name: 'Marketing', color: 'bg-blue-100 text-blue-700' },
+    { name: 'Coding', color: 'bg-green-100 text-green-700' },
+    { name: 'Nano Banana Pro', color: 'bg-purple-100 text-purple-700' },
 ];
 
-const DEFAULT_PROMPTS = [
+const SEED_PROMPTS = [
     {
-        id: crypto.randomUUID(),
         title: 'Modern Facade Update',
         content: 'Using this render of a contemporary facade, replace the facade material with weathered corten steel and integrate subtle vertical louvers of natural wood. Maintain the original lighting and perspective.',
-        categoryId: categoryIds.nano,
+        categoryName: 'Nano Banana Pro',
     },
     {
-        id: crypto.randomUUID(),
         title: 'Daytime to Sunset',
         content: 'Using this daytime render of a building exterior, turn it into a sunset scene, add a few clouds to the sky, and incorporate warm artificial light spilling from the windows. Maintain the original building geometry.',
-        categoryId: categoryIds.nano,
+        categoryName: 'Nano Banana Pro',
     },
     {
-        id: crypto.randomUUID(),
         title: 'Blueprint to 3D Render',
         content: 'Transform this blueprint image into a photorealistic 3D rendering of a contemporary high-rise building with a glass facade, showing realistic reflections and ambient city lighting at dusk.',
-        categoryId: categoryIds.nano,
+        categoryName: 'Nano Banana Pro',
     },
     {
-        id: crypto.randomUUID(),
         title: 'Interior Morning Light',
         content: 'Transform this interior shot to show the space under soft, diffused morning light, with subtle volumetric fog filtering through the windows.',
-        categoryId: categoryIds.nano,
+        categoryName: 'Nano Banana Pro',
     },
     {
-        id: crypto.randomUUID(),
         title: 'Adding Vegetation',
         content: 'From this base image of a residential building, emphasize the intricate brickwork details and add climbing ivy to one side of the facade. Add two minimalist concrete planters with tall green foliage near the entrance.',
-        categoryId: categoryIds.nano,
+        categoryName: 'Nano Banana Pro',
     },
     {
-        id: crypto.randomUUID(),
         title: 'Style Transfer: Brutalist',
-        content: 'Using this photograph of a historic building, reimagine it as a brutalist architecture concept, maintaining the original building\'s massing but using raw concrete finishes and repetitive modular elements.',
-        categoryId: categoryIds.nano,
+        content: "Using this photograph of a historic building, reimagine it as a brutalist architecture concept, maintaining the original building's massing but using raw concrete finishes and repetitive modular elements.",
+        categoryName: 'Nano Banana Pro',
     },
     {
-        id: crypto.randomUUID(),
         title: 'Golden Hour Exterior',
         content: 'Modern sustainable office building exterior, featuring vertical gardens and solar panels, photographed from street level looking up, golden hour lighting with warm sunset glow, blue hour sky beginning to show, architectural photography style, sharp focus with high detail.',
-        categoryId: categoryIds.nano,
+        categoryName: 'Nano Banana Pro',
     },
 ];
 
 async function seed() {
-    try {
-        console.log('Starting database seeding...');
+    console.log('Starting database seeding...');
 
-        // Check if categories already exist
-        const existingCategories = await db.select().from(categories);
-        if (existingCategories.length === 0) {
-            console.log('Seeding categories...');
-            await db.insert(categories).values(DEFAULT_CATEGORIES);
-            console.log(`✓ Inserted ${DEFAULT_CATEGORIES.length} categories`);
-        } else {
-            console.log(`⊘ Categories already exist (${existingCategories.length} found), skipping...`);
-        }
+    // Step 1: Clear existing data (prompts first due to FK constraint)
+    console.log('Clearing existing data...');
+    await db.delete(prompts);
+    await db.delete(categories);
+    console.log('✓ Cleared existing data');
 
-        // Check if prompts already exist
-        const existingPrompts = await db.select().from(prompts);
-        if (existingPrompts.length === 0) {
-            console.log('Seeding prompts...');
-            await db.insert(prompts).values(DEFAULT_PROMPTS);
-            console.log(`✓ Inserted ${DEFAULT_PROMPTS.length} prompts`);
-        } else {
-            console.log(`⊘ Prompts already exist (${existingPrompts.length} found), skipping...`);
-        }
+    // Step 2: Insert categories (UUIDs auto-generated by the database)
+    console.log('Seeding categories...');
+    const insertedCategories = await db.insert(categories)
+        .values(SEED_CATEGORIES.map(c => ({ name: c.name, color: c.color })))
+        .returning();
+    console.log(`✓ Inserted ${insertedCategories.length} categories`);
 
-        console.log('✓ Database seeding completed successfully!');
-    } catch (error) {
-        console.error('Error seeding database:', error);
-        process.exit(1);
+    // Step 3: Build a name→id map for linking prompts to categories
+    const categoryMap = new Map(insertedCategories.map(c => [c.name, c.id]));
+
+    // Step 4: Insert prompts with correct category UUIDs
+    console.log('Seeding prompts...');
+    const insertedPrompts = await db.insert(prompts)
+        .values(SEED_PROMPTS.map(p => ({
+            title: p.title,
+            content: p.content,
+            categoryId: categoryMap.get(p.categoryName) ?? null,
+        })))
+        .returning();
+    console.log(`✓ Inserted ${insertedPrompts.length} prompts`);
+
+    console.log('✓ Database seeding completed successfully!');
+
+    // Print summary
+    console.log('\nSummary:');
+    for (const cat of insertedCategories) {
+        const count = insertedPrompts.filter(p => p.categoryId === cat.id).length;
+        console.log(`  ${cat.name} (${cat.id}): ${count} prompts`);
     }
 }
 
-seed();
+seed().catch((err) => {
+    console.error('Seeding failed:', err);
+    process.exit(1);
+});
